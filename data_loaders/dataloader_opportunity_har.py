@@ -102,8 +102,8 @@ class Opportunity_HAR_DATA():
         if self.datanorm_type is not None:
             train_vali_x, test_x = self.normalization(train_vali_x, test_x)
 
-        train_vali_window_index = self.get_the_sliding_index(train_vali_x.copy(), train_vali_y.copy())
-        self.test_window_index = self.get_the_sliding_index(test_x.copy(), test_y.copy())
+        train_vali_window_index = self.get_the_sliding_index(train_vali_x.copy(), train_vali_y.copy(), Flag_id = True)
+        self.test_window_index = self.get_the_sliding_index(test_x.copy(), test_y.copy(), Flag_id = False)
         #print("train_vali_window_index:",len(train_vali_window_index))
         self.train_window_index, self.vali_window_index =  self.train_vali_split(train_vali_window_index)
 
@@ -185,7 +185,7 @@ class Opportunity_HAR_DATA():
         test  = self.normalizer.normalize(test)
         return train_vali, test
 
-    def get_the_sliding_index(self, data_x, data_y):
+    def get_the_sliding_index(self, data_x, data_y, Flag_id = True):
         """
         Because of the large amount of data, it is not necessary to store all the contents of the slidingwindow, 
         but only to access the index of the slidingwindow
@@ -225,8 +225,10 @@ class Opportunity_HAR_DATA():
                 end   = start+windowsize
 
                 while end < temp_df.index[-1]:
-
-                    window_index.append([sub_id, start, end])
+                    if Flag_id:
+                        window_index.append([sub_id, start, end])
+                    else:
+                        window_index.append([start, end])
 
                     start = start + displacement
                     end   = start + windowsize
