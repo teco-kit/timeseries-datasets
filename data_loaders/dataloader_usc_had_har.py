@@ -3,9 +3,13 @@ import numpy as np
 import os
 from random import sample
 from data_loaders.utils import Normalizer
-from sklearn.preprocessing import LabelEncoder
+import scipy.io as sio
+
+# https://github.com/saif-mahmud/self-attention-HAR/blob/main/configs/data.yaml
+# https://github.com/esansano/dl-for-har-comparison/blob/master/src/utils/dataimport.py
+
 # ================================= PAMAP2 HAR DATASET ============================================
-class PAMAP2_HAR_DATA():
+class USC_HAD_HAR_DATA():
 
     def __init__(self, args):
         """
@@ -25,83 +29,53 @@ class PAMAP2_HAR_DATA():
         self.datanorm_type= args.datanorm_type
 		
         # !!!!!! Depending on the setting of each data set!!!!!!
-        # the 0th column is time step 
-        self.used_cols    = [1,# this is "label"
-                             # TODO check the settings of other paper 
-                             # the second column is heart rate (bpm) --> ignore?
-                             # each IMU sensory has 17 channals , 3-19,20-36,38-53
-                             # the first temp ignores
-                             # the last four channel according to the readme are invalide
-                             4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,        # IMU Hand
-                             21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,  # IMU Chest
-                             38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49   # IMU ankle
-                            ]
+        # because this dataset only has 6 columns, the label is saved in the file name, so this used cols will not be used
+        self.used_cols    = []
+        # The original labels are from 1 to 12, here we substract all label - 1 !!!!
+        self.label_map = {0: "Walking Forward",
+                          1: "Walking Left",
+                          2: "Walking Right",
+                          3: "Walking Upstairs",
+                          4: "Walking Downstairs",
+                          5: "Running Forward",
+                          6: "Jumping Up",
+                          7: "Sitting",
+                          8: "Standing",
+                          9: "Sleeping",
+                          10: "Elevator Up",
+                          11: "Elevator Down"}
 
-        self.label_map = [ # (0, 'other'),
-            (1, 'lying'),
-            (2, 'sitting'),
-            (3, 'standing'),
-            (4, 'walking'),
-            (5, 'running'),
-            (6, 'cycling'),
-            (7, 'nordic walking'),
-            # (9, 'watching TV'),
-            # (10, 'computer work'),
-            # (11, 'car driving'),
-            (12, 'ascending stairs'),
-            (13, 'descending stairs'),
-            (16, 'vacuum cleaning'),
-            (17, 'ironing'),
-            # (18, 'folding laundry'),
-            # (19, 'house cleaning'),
-            # (20, 'playing soccer'),
-            (24, 'rope jumping')
-        ]
-        # As can be seen from the PerformedActivitiesSummary.pdf, some activities are not performed
-        # TODO this should be chosen by reading related work
-        # self.drop_activities = [0,9,10,11,18,19,20] #TODO check!!!!
-        self.drop_activities = [0]
+        # As can be seen from the readme
+      
+        self.drop_activities = []
 
-        self.train_keys   = ['subject101', 'subject102', 'subject103', 
-                             'subject104', 
-                             'subject107', 'subject108', 'subject109']
-        # Manually encoding the subject 
-        self.train_keys   = [1,2,3,4,7,8,9]
+        self.train_keys   = [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 ]
 
-        self.vali_keys    = ['subject105']
-        self.vali_keys    = [5]
+        self.vali_keys    = [ 11, 12 ]
 
-        self.test_keys    = ['subject106']
-        self.test_keys    = [6]        
+        self.test_keys    = [ 13, 14 ]   
 	
-        # form the columns name , [label, 12*[hand], 12*[chest], 12*[ankle]]
-        col_names=['activity_id']
-
-        IMU_locations = ['hand', 'chest', 'ankle']
-        IMU_data      = ['acc_16_01', 'acc_16_02', 'acc_16_03',
-                         'acc_06_01', 'acc_06_02', 'acc_06_03',
-                         'gyr_01', 'gyr_02', 'gyr_03',
-                         'mag_01', 'mag_02', 'mag_03']
-
-        self.col_names = col_names + [item for sublist in [[dat+'_'+loc for dat in IMU_data] for loc in IMU_locations] for item in sublist]
+        # This dataset only has this 6 channels
+        self.col_names = [ 'acc_x', 'acc_y', 'acc_z', 'gyr_x', 'gyr_y', 'gyr_z' ]
 
         self.read_data()
         
     def read_data(self):
 
-
+        # load the data
         train_vali_x, train_vali_y, test_x, test_y = self.load_the_data(root_path = self.root_path)
-        train_vali_y, test_y, self.drop_activities = self.transform_labels(train_vali_y, test_y,self.drop_activities)
 
+        # differencing 
         if self.difference:
             train_vali_x, test_x = self.differencing(train_vali_x, test_x)
-            
+        # normalization
         if self.datanorm_type is not None:
             train_vali_x, test_x = self.normalization(train_vali_x, test_x)
-
+        # sliding window
         train_vali_window_index = self.get_the_sliding_index(train_vali_x.copy(), train_vali_y.copy(),Flag_id = True)
         self.test_window_index = self.get_the_sliding_index(test_x.copy(), test_y.copy(),Flag_id = False)
-        #print("train_vali_window_index:",len(train_vali_window_index))
+
+        # train validation split
         self.train_window_index, self.vali_window_index =  self.train_vali_split(train_vali_window_index)
 
         self.train_vali_x = train_vali_x.copy()
@@ -111,17 +85,40 @@ class PAMAP2_HAR_DATA():
         self.test_y = test_y.copy()
 
     def load_the_data(self, root_path):
-        file_list = os.listdir(root_path)
-        
+
+        activities = range(1, 13)
+
+
+        temp_train_keys = []
+        temp_vali_keys = []
+        temp_test_keys = []
+
         df_dict = {}
-        for file in file_list:
-            sub_data = pd.read_table(os.path.join(root_path,file), header=None, sep='\s+')
-            sub_data =sub_data.iloc[:,self.used_cols]
-            sub_data.columns = self.col_names
-            # if missing values, imputation
-            sub_data = sub_data.interpolate(method='linear', limit_direction='both')
-            sub_data['sub_id'] =int(file[9])
-            df_dict[int(file[9])] = sub_data   
+        for subject in range(1, 15):
+            for activity in activities:
+                for trial in range(1, 6):
+
+                    data = sio.loadmat("%s/Subject%d%sa%dt%d.mat" % (root_path, subject, os.sep, activity, trial))
+                    data = np.array(data['sensor_readings'])#[::2]  # Only even rows -> sampling rate 50Hz
+                    data = pd.DataFrame(data,columns=self.col_names)
+					
+                    id_ = "{}_{}_{}".format(subject,activity,trial)
+                    data["sub_id"] = id_
+                    if subject in self.train_keys:
+                        temp_train_keys.append(id_)
+                    elif subject in self.vali_keys:
+                        temp_vali_keys.append(id_)
+                    else:
+                        temp_test_keys.append(id_)
+
+                    data["activity_id"] = activity
+                    df_dict[id_] = data   
+
+        self.train_keys = temp_train_keys 
+        self.vali_keys = temp_vali_keys 
+        self.test_keys = temp_test_keys 
+
+
 
         train_vali = pd.DataFrame()
         for key in self.train_keys+self.vali_keys :
@@ -132,13 +129,13 @@ class PAMAP2_HAR_DATA():
             test = pd.concat([test,df_dict[key]])
         
         train_vali = train_vali.set_index('sub_id')
-        train_vali_label = train_vali.iloc[:,0]
-        train_vali = train_vali.iloc[:,1:]
+        train_vali_label = train_vali.iloc[:,-1] - 1
+        train_vali = train_vali.iloc[:,:-1]
 
 
         test = test.set_index('sub_id')
-        test_label = test.iloc[:,0]  
-        test = test.iloc[:,1:]
+        test_label = test.iloc[:,-1] - 1
+        test = test.iloc[:,:-1]
 
         return train_vali, train_vali_label, test, test_label
 
@@ -193,16 +190,13 @@ class PAMAP2_HAR_DATA():
 
         # TODO s!!!!!!!!!!!!!!!   Dataset Dependent!!!!!!!!!!!!!!!!!!!! 
         freq         = 100
-        windowsize   = int(5.12 * freq)
-
+        windowsize   = int(1 * freq)
         if Flag_id:
-            displacement = int(1 * freq)
+            displacement = int(0.4 * freq)
         else:
             displacement = 1
-
         drop_long    = 7.5
         window_index = []
-        id_          = 0
         drop_ubergang = False
 
         if drop_ubergang == True:
@@ -232,36 +226,6 @@ class PAMAP2_HAR_DATA():
         return window_index
 
 
-    def transform_labels(self, y_train, y_test, drop_activities = [0]):
-        """
-        Transform label to min equal zero and continuous
-        For example if we have [1,3,4] --->  [0,1,2]
-        Remenber: convert the the label for drop activities, it may change
-        """
-        # no validation split
-        # init the encoder
-        encoder = LabelEncoder()
-        # concat train and test to fit
-        y_train_test = np.concatenate((y_train, y_test), axis=0)
-        #print(np.unique(y_train_test))
-        # fit the encoder
-        encoder.fit(y_train_test)
-        # transform to min zero and continuous labels
-        new_y_train_test = encoder.transform(y_train_test)
-        to_drop = encoder.transform(drop_activities)
-        # resplit the train and test
-        new_y_train = new_y_train_test[0:len(y_train)]
-        new_y_test = new_y_train_test[len(y_train):]
-        
-        new_y_train = pd.Series(new_y_train)
-        new_y_train.index = y_train.index
-        new_y_train.name = "activity_id"
-        
-        new_y_test =  pd.Series(new_y_test)
-        new_y_test.index = y_test.index
-        new_y_test.name = "activity_id"
-
-        return new_y_train, new_y_test, to_drop
 
     def train_vali_split(self, train_vali_window_index):
         """

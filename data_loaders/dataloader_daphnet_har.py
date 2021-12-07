@@ -7,7 +7,7 @@ from data_loaders.utils import Normalizer
 # ========================================       Opportunity HAR UCI                =============================
 class Daphnet_HAR_DATA():
 
-    def __init__(self, args, flag="train"):
+    def __init__(self, args):
         """
         root_path : Root directory of the data set
         difference (bool) : Whether to calculate the first order derivative of the original data
@@ -199,7 +199,12 @@ class Daphnet_HAR_DATA():
         # To set the window size and Sliding step
         freq         = 64  
         windowsize   = int(3 * freq)
-        displacement = int(0.33*freq)
+
+        if Flag_id:
+            displacement = int(0.33 * freq)
+        else:
+            displacement = 1
+
         drop_long    = 3
         window_index = []
         drop_ubergang = False
