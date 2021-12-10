@@ -15,12 +15,14 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 - [x] Skoda Checkpoint 
 - [x] MHEALTH 
 - [x] UTD-MHAD + 
+- [x] DSA
+- [x] Singe_Chest
 - [ ] SHO
 - [x] USC-HAD 
 - [ ] WHARF
 - [ ] ispl
 - [ ] swell 
-- [ ] fusion 
+- [x] fusion 
 - [ ] Hhar 
 - [ ] realworld 
 - [ ] Berkeley MHAD
@@ -35,15 +37,20 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 - [ ] HASC https://ubicomp.eti.uni-siegen.de/home/datasets/icmi18/
 - [ ] HuGaDB https://github.com/romanchereshnev/HuGaDB
 
-https://archive.ics.uci.edu/ml/datasets/Activity+Recognition+from+Single+Chest-Mounted+Accelerometer
+
 
 https://machinelearningmastery.com/how-to-load-and-explore-a-standard-human-activity-recognition-problem/
 ## EEG Datasets
+- BCI III
+- BCI IV
 
 
 ## ECG Datasets
 
 
 ## Predictive Maintanance
+
+
+
 
 
