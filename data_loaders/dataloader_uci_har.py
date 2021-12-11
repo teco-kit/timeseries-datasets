@@ -1,16 +1,38 @@
 import pandas as pd
 import numpy as np
 import os
-from random import sample
-from data_loaders.utils import Normalizer
-# https://github.com/Koutoulakis/Deep-Learning-for-Human-Activity-Recognition/blob/master/Datareader/datareader.py
-# https://github.com/nhammerla/deepHAR/blob/master/data/datareader.py
-# https://github.com/rmutegeki/iSPLInception/blob/ca45393b8ff1cf1b57151893e7ffd65bdb1ecfb3/datareader.py#L358
-# https://github.com/AntonioAcunzo/mvts_transformer/tree/master/src/datasets
-# ============================== UCI HAR  ======================================
-class UCI_HAR_DATA():
 
+from data_loaders.dataloader_base import BASE_DATA
+# ============================== UCI_HAR_DATA ======================================
+class UCI_HAR_DATA(BASE_DATA):
+    """
+    The experiments have been carried out with a group of 30 volunteers within an age bracket of 19-48 years. 
+    Each person performed six activities 
+    (WALKING, WALKING_UPSTAIRS, WALKING_DOWNSTAIRS, SITTING, STANDING, LAYING) 
+    wearing a smartphone (Samsung Galaxy S II) on the waist. Using its embedded accelerometer and gyroscope, 
+    we captured 3-axial linear acceleration and 3-axial angular velocity at a constant rate of 50Hz. 
+    The experiments have been video-recorded to label the data manually. 
+    The obtained dataset has been randomly partitioned into two sets, 
+    where 70% of the volunteers was selected for generating the training data and 30% the test data. 
+
+    The sensor signals (accelerometer and gyroscope) were pre-processed by applying noise filters 
+    and then sampled in fixed-width sliding windows of 2.56 sec and 50% overlap (128 readings/window). 
+    The sensor acceleration signal, which has gravitational and body motion components, 
+    was separated using a Butterworth low-pass filter into body acceleration and gravity. 
+    The gravitational force is assumed to have only low frequency components, 
+    therefore a filter with 0.3 Hz cutoff frequency was used. 
+    From each window, a vector of features was obtained by calculating variables from the time and frequency domain. 
+    See 'features_info.txt' for more details. 
+
+        1 WALKING
+        2 WALKING_UPSTAIRS
+        3 WALKING_DOWNSTAIRS
+        4 SITTING
+        5 STANDING
+        6 LAYING
+    """
     def __init__(self, args):
+        super(UCI_HAR_DATA, self).__init__(args)
         """
         root_path : Root directory of the data set
         difference (bool) : Whether to calculate the first order derivative of the original data
@@ -21,156 +43,162 @@ class UCI_HAR_DATA():
             wavelet : Methods of wavelet transformation
 
         """
+        self.used_cols    = [] #no use , because this data format has save each sensor in one file
+        self.col_names   =  ['body_acc_x_', 'body_acc_y_', 'body_acc_z_',
+                             'body_gyro_x_', 'body_gyro_y_', 'body_gyro_z_',
+                             'total_acc_x_', 'total_acc_y_', 'total_acc_z_']
 
-        self.root_path    = args.root_path
-        
-        self.difference   = args.difference
-        self.datanorm_type= args.datanorm_type
-        
+        self.label_map = [ 
+            (1, 'WALKING'),
+            (2, 'WALKING_UPSTAIRS'),
+            (3, 'WALKING_DOWNSTAIRS'),
+            (4, 'SITTING'),
+            (5, 'STANDING'),
+            (6, 'LAYING'),
+        ]
+
+        self.drop_activities = []
+
         # All ID used for training [ 1,  3,  5,  6,  7,  8, 11, 14, 15, 16, 17, 19, 21, 22, 23, 25, 26, 27, 28, 29, 30]
         # All ID used for Test  [ 2,  4,  9, 10, 12, 13, 18, 20, 24]
+        self.train_keys   = [ 1,  3,  5,  7,  8, 14, 15, 16, 17, 21, 22, 23, 26, 27, 28, 29]
+        self.vali_keys    = [ 6, 11, 19, 25, 30]
+        self.test_keys    = [ 2,  4,  9, 10, 12, 13, 18, 20, 24]
 		
-        # If train_subs is the same as all the IDs used for training, then split randomly
-        # If train_subs is only subset of all ID used for training, the rest IDs (subjects) will be used for validation
-        self.train_subs = [1, 3, 5, 6, 7, 8, 11, 14, 15, 16, 17,19, 21, 22, 23, 25, 26, 27, 28, 29, 30 ]
-        
+        self.file_encoding = {}
 
-        self.spectrogram  = args.spectrogram
-        if self.spectrogram:
-            self.scales       = np.arange(1, int(args.f_max/2)+1)
-            self.wavelet      = args.wavelet
+
+        self.labelToId = {int(x[0]): i for i, x in enumerate(self.label_map)}
+        self.all_labels = list(range(len(self.label_map)))
+
+        self.drop_activities = [self.labelToId[i] for i in self.drop_activities]
+        self.no_drop_activites = [item for item in self.all_labels if item not in self.drop_activities]
 
         self.read_data()
 
-    def read_data(self):
-        train_vali_x, train_vali_y, test_x, test_y = self.load_the_data(root_path = self.root_path)
-        
-        if self.difference:
-            train_vali_x, test_x = self.differencing(train_vali_x, test_x)
-            
-        if self.datanorm_type is not None:
-            train_vali_x, test_x = self.normalization(train_vali_x, test_x)
-            
-            
-        train_x,train_y,vali_x,vali_y = self.train_vali_split(train_vali_x,train_vali_y)
-        
-        self.train_x = train_x.copy()
-        # !!!!!! Note here that different datasets are labelled differently
-        # UCIHAR are [1,2,3,4,5,6], --> so all minus one -- [0,1,2,3,4,5]
-        self.train_y = np.array(train_y.copy())-1
-        self.vali_x = vali_x.copy()
-        self.vali_y = np.array(vali_y.copy())-1
-        self.test_x = test_x.copy()
-        self.test_y = test_y.copy().iloc[:,0].values-1
+        #self.spectrogram  = args.spectrogram
+        #if self.spectrogram:
+        #    self.scales       = np.arange(1, int(args.f_max/2)+1)
+        #    self.wavelet      = args.wavelet
+
+
 
     def load_the_data(self, root_path):
-        # For each dataset, How to read data is different
+
+        temp_train_keys = []
+        temp_test_keys = []
+        temp_vali_keys = []
+        # ====================  Load the sensor values ====================
         train_vali_path = os.path.join(root_path, "train/Inertial Signals/")
         test_path  = os.path.join(root_path, "test/Inertial Signals/")
-        
-        file_list = os.listdir(train_vali_path)
 
         train_vali_dict = {}
         test_dict  = {}
+
+        file_list = os.listdir(train_vali_path)
         for file in file_list:
+
             train_vali = pd.read_csv(train_vali_path + file,header=None, delim_whitespace=True)
             test  = pd.read_csv(test_path+file[:-9]+"test.txt",header=None, delim_whitespace=True)
+			
             train_vali_dict[file[:-9]] = train_vali
             test_dict[file[:-9]] = test
-    
-        columns = ['body_acc_x_', 'body_acc_y_', 'body_acc_z_',
-                   'body_gyro_x_', 'body_gyro_y_', 'body_gyro_z_',
-                   'total_acc_x_', 'total_acc_y_', 'total_acc_z_']
 
 
-        # Train_Vali: Convert all channels into one DataFrame, and Prepare the index for each segment!
-        train_vali = pd.DataFrame(np.stack([train_vali_dict[col].values.reshape(-1) for col in columns], axis=1), columns = columns)
-        index = []
-        for i in range(train_vali_dict["body_acc_x_"].shape[0]):
-            index.extend(128*[i])
-        train_vali.index = index
+        # =================== Define the sub id  and the label for each segments FOR  TRAIN VALI  ================
+        train_vali = pd.DataFrame(np.stack([train_vali_dict[col].values.reshape(-1) for col in self.col_names], axis=1), columns = self.col_names)
 
-        # Test: Convert all channels into one DataFrame, and Prepare the index for each segment!
-        test = pd.DataFrame(np.stack([test_dict[col].values.reshape(-1) for col in columns], axis=1), columns = columns)
-        index = []
-        for i in range(test_dict["body_acc_x_"].shape[0]):
-            index.extend(128*[i])
-        test.index = index
-
-        # read the label
-        train_vali_label = pd.read_csv(os.path.join(root_path,"train/y_train.txt"),header=None)
-        test_label = pd.read_csv(os.path.join(root_path,"test/y_test.txt"),header=None)
-        return train_vali, train_vali_label, test, test_label
-        
-    def differencing(self, train_vali, test):
-        # define the name for differenced columns
-        columns = ["diff_"+i for i in train_vali.columns]
-        # The original data has been divided into segments by the sliding window method. 
-        # There is no continuity between paragraphs, so diffrecne is only done within each segment
-        grouped_train_vali = train_vali.groupby(by=train_vali.index)
-        diff_train_vali = grouped_train_vali.diff()
-        diff_train_vali.columns = columns
-		# TODO backfill?forefill?
-        diff_train_vali.fillna(method ="backfill",inplace=True)
-        train_vali = pd.concat([train_vali,diff_train_vali], axis=1)
-
-        grouped_test = test.groupby(by=test.index)
-        diff_test = grouped_test.diff()
-        diff_test.columns = columns
-        diff_test.fillna(method ="backfill",inplace=True)
-        test  = pd.concat([test, diff_test],  axis=1)
-        
-        return train_vali, test
-    
-    def normalization(self, train_vali, test):
-        self.normalizer = Normalizer(self.datanorm_type)
-        self.normalizer.fit(train_vali)
-        train_vali = self.normalizer.normalize(train_vali)
-        test  = self.normalizer.normalize(test)
-        return train_vali, test
-
-    def train_vali_split(self, train_vali, train_vali_label) :
-        # This file provides information about which ID each segment belongs to
-        # It is for train test split according to the IDs
-        train_vali_subjects = pd.read_csv(os.path.join(self.root_path,"train/subject_train.txt"), header=None)
+        train_vali_subjects = pd.read_csv(os.path.join(root_path,"train/subject_train.txt"), header=None)
         train_vali_subjects.columns = ["subjects"]
-        
-        all_ids = set(train_vali_subjects["subjects"].unique())
-        train_subs = set(self.train_subs)
-        
-        train_label = []
-        train_dfs = []
-        vali_label = []
-        vali_dfs = []
-        
-        if len(all_ids.difference(train_subs)) > 0:
-            print("subjects split")
 
-            for i in range(train_vali_subjects.shape[0]):
-                temp = train_vali.loc[i]
-                temp_label = train_vali_label.loc[i].values[0]
-                id = train_vali_subjects.loc[i].values[0]
-                if id in train_subs:
-                    train_dfs.append(temp)
-                    train_label.append(temp_label)
-                else:
-                    vali_dfs.append(temp)
-                    vali_label.append(temp_label)
-        else:
-            print("data ramdom split")
-            all_index = list(train_vali.index.unique())
-            train_list = sample(all_index,int(len(all_index)*0.8))
-            for i in all_index:
-                temp = train_vali.loc[i]
-                temp_label = train_vali_label.loc[i].values[0]
-                id = train_vali_subjects.loc[i].values[0]
-                if id in train_list:
-                    train_dfs.append(temp)
-                    train_label.append(temp_label)
-                else:
-                    vali_dfs.append(temp)
-                    vali_label.append(temp_label)
-            
-        train = pd.concat([train_dfs[i].reset_index(drop=True).set_index(pd.Series(128*[i])) for i in range(len(train_dfs))], axis=0)
-        vali = pd.concat([vali_dfs[i].reset_index(drop=True).set_index(pd.Series(128*[i])) for i in range(len(vali_dfs))], axis=0)    
-        return train,train_label,vali, vali_label
+        train_vali_label = pd.read_csv(os.path.join(root_path,"train/y_train.txt"),header=None)
+        train_vali_label.columns = ["labels"]
+
+        index = []
+        labels = []
+
+        assert train_vali_dict["body_acc_x_"].shape[0] == train_vali_subjects.shape[0]
+
+        # repeat the id and the label for each segs 128 tims
+        for i in range(train_vali_dict["body_acc_x_"].shape[0]):
+            sub = train_vali_subjects.loc[i,"subjects"]
+            sub_id = "{}_{}".format(sub,i)
+
+            ac_id = train_vali_label.loc[i,"labels"]
+            # according to the sub, add the sub id in to the train vali test keys
+            if sub in self.train_keys:
+                temp_train_keys.append(sub_id)
+            elif sub in self.vali_keys:
+                temp_vali_keys.append(sub_id)
+            else:
+                temp_test_keys.append(sub_id)
+
+            index.extend(128*[sub_id])
+            labels.extend(128*[ac_id])
+
+        train_vali["sub_id"] = index
+        train_vali["activity_id"] = labels
+
+        # =================== Define the sub id  and the label for each segments  FOR TEST ================
+        test = pd.DataFrame(np.stack([test_dict[col].values.reshape(-1) for col in self.col_names], axis=1), columns = self.col_names)
+
+        test_subjects = pd.read_csv(os.path.join(root_path,"test/subject_test.txt"), header=None)
+        test_subjects.columns = ["subjects"]
+
+        test_label = pd.read_csv(os.path.join(root_path,"test/y_test.txt"),header=None)
+        test_label.columns = ["labels"]
+
+        index = []
+        labels = []
+
+        assert test_dict["body_acc_x_"].shape[0] == test_subjects.shape[0]
+
+        for i in range(test_dict["body_acc_x_"].shape[0]):
+            sub = test_subjects.loc[i,"subjects"]
+            sub_id = "{}_{}".format(sub,i)
+
+            ac_id = test_label.loc[i,"labels"]
+
+            if sub in self.train_keys:
+                temp_train_keys.append(sub_id)
+            elif sub in self.vali_keys:
+                temp_vali_keys.append(sub_id)
+            else:
+                temp_test_keys.append(sub_id)
+
+            index.extend(128*[sub_id])
+            labels.extend(128*[ac_id])
+
+        test["sub_id"] = index
+        test["activity_id"] = labels
+
+        # ================= Updata the keys =================
+        self.train_keys  = temp_train_keys 
+        self.test_keys  = temp_test_keys 
+        self.vali_keys  = temp_vali_keys 
+
+        # The split may be different as the default setting, so we concat all segs together
+        df_all = pd.concat([train_vali,test])
+        df_dict = {}
+        for i in df_all.groupby("sub_id"):
+            df_dict[i[0]] = i[1]
+        df_all = pd.concat(df_dict)
+
+        # ================= Label Transformation ===================
+        df_all["activity_id"] = df_all["activity_id"].map(self.labelToId)
+
+        # train_vali Test split 
+        train_vali = df_all.loc[self.train_keys+self.vali_keys]
+        test = df_all.loc[self.test_keys]
+
+
+        train_vali = train_vali.set_index('sub_id')
+        train_vali_label = train_vali.iloc[:,-1] 
+        train_vali = train_vali.iloc[:,:-1]
+
+
+        test = test.set_index('sub_id')
+        test_label = test.iloc[:,-1]
+        test = test.iloc[:,:-1]
+
+        return train_vali, train_vali_label, test, test_label
