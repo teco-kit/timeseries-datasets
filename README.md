@@ -7,7 +7,7 @@ A collection of timeseries datasets and data loaders for machine learning.
 ## Activity Recognition Datasets
 https://dl.acm.org/doi/pdf/10.1145/3447744
 
-- [x] UCI HAR
+- [x] UCI HAR (HAPT)
 - [x] OPPORTUNITY
 - [x] PAMAP2
 - [x] WISDM 
@@ -26,7 +26,6 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 - [ ] Hhar 
 - [ ] realworld 
 - [ ] Berkeley MHAD
-- [ ] UCI HAPT
 - [ ] ARA
 - [ ] Ambient Kitche
 - [ ] BIDMC Congestive Heart Failure
