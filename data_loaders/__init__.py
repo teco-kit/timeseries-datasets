@@ -12,6 +12,9 @@ from .dataloader_fusion_har import FUSION_HAR_DATA
 from .dataloader_dsa_har import DSA_HAR_DATA
 from .dataloader_single_chest_har import Single_Chest_HAR_DATA
 from .dataloader_utd_mhad_har import UTD_MHAD_HAR_DATA
+from .dataloader_HuGaDB_har import HuGaDB_HAR_DATA
+from .dataloader_motion_sense_har import MotionSense_HAR_DATA
+from .dataloader_complexHA_har import ComplexHA_HAR_DATA
 
 data_dict = {"ucihar" : UCI_HAR_DATA,
              "pamap2" : PAMAP2_HAR_DATA,
@@ -24,7 +27,10 @@ data_dict = {"ucihar" : UCI_HAR_DATA,
              "fusion" : FUSION_HAR_DATA,
              "dsa" : DSA_HAR_DATA,
              "single_chest" : Single_Chest_HAR_DATA,
-             "utd_mhad" : UTD_MHAD_HAR_DATA}
+             "utd_mhad" : UTD_MHAD_HAR_DATA,
+             "hugadb" : HuGaDB_HAR_DATA,
+             "motionsense" : MotionSense_HAR_DATA,
+             "complexha" : ComplexHA_HAR_DATA}
 
 
 

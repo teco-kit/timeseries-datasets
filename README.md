@@ -14,34 +14,39 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 - [x] Daphnet
 - [x] Skoda Checkpoint 
 - [x] MHEALTH 
-- [x] UTD-MHAD + 
-- [x] DSA
+- [x] UTD-MHAD 
+- [x] DSAAD
 - [x] Singe_Chest
-- [ ] SHO
-- [x] USC-HAD 
-- [ ] WHARF
-- [ ] ispl
-- [ ] swell 
 - [x] fusion 
-- [ ] Hhar 
-- [ ] realworld 
-- [ ] Berkeley MHAD
+- [x] USC-HAD 
+- [x] HuGaDB https://github.com/romanchereshnev/HuGaDB  
+- [x] MotionSense https://github.com/mmalekzadeh/motion-sense
+- [x] UTwente Complex_Human Activity
+- [x] ISPL
+- [x] swell 
+- [x] Hhar 
+
+- [ ] UTwente Smoking Activity Dataset
+- [ ] SHO
+- [ ] Actitracker 
+- [ ] WHARF
+- [ ] realworld  https://sensor.informatik.uni-mannheim.de/index.html#dataset_realworld
 - [ ] ARA
 - [ ] Ambient Kitche
 - [ ] BIDMC Congestive Heart Failure
-- [ ] DSADS
 - [ ] ActiveMiles
 - [ ] UCI WISDM
 - [ ] WESAD
+- [ ] MobiAct
 - [ ] HASC https://ubicomp.eti.uni-siegen.de/home/datasets/icmi18/
-- [ ] HuGaDB https://github.com/romanchereshnev/HuGaDB
+- [ ] WARD https://people.eecs.berkeley.edu/~yang/software/WAR/
+- [ ] SHL2018 
 
 
 
-https://machinelearningmastery.com/how-to-load-and-explore-a-standard-human-activity-recognition-problem/
 ## EEG Datasets
-- BCI III
-- BCI IV
+- [ ] BCI III
+- [ ] BCI IV
 
 
 ## ECG Datasets
