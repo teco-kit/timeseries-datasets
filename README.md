@@ -17,7 +17,7 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 - [x] UTD-MHAD 
 - [x] DSAAD
 - [x] Singe_Chest
-- [x] fusion 
+- [x] Fusion (SHO) 
 - [x] USC-HAD 
 - [x] HuGaDB https://github.com/romanchereshnev/HuGaDB  
 - [x] MotionSense https://github.com/mmalekzadeh/motion-sense
@@ -27,22 +27,22 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 - [x] Hhar 
 
 - [ ] UTwente Smoking Activity Dataset
-- [ ] SHO
-- [ ] Actitracker 
+- [ ] Actitracker
 - [ ] WHARF
 - [ ] realworld  https://sensor.informatik.uni-mannheim.de/index.html#dataset_realworld
-- [ ] ARA
+
+- [ ] ARAS??Binary sensor?
 - [ ] Ambient Kitche
-- [ ] BIDMC Congestive Heart Failure
+
 - [ ] ActiveMiles
 - [ ] UCI WISDM
-- [ ] WESAD
+- [ ] WESAD https://ubicomp.eti.uni-siegen.de/home/datasets/icmi18/
 - [ ] MobiAct
-- [ ] HASC https://ubicomp.eti.uni-siegen.de/home/datasets/icmi18/
+- [ ] HASC 
 - [ ] WARD https://people.eecs.berkeley.edu/~yang/software/WAR/
 - [ ] SHL2018 
-
-
+- [ ] ActRecTut https://physionet.org/content/wrist/1.0.0/
+- [ ] SPHERE https://github.com/jenhuluck/Deep-Learning-in-Human-Activity-Recognition-/tree/master/Sphere
 
 ## EEG Datasets
 - [ ] BCI III
@@ -50,6 +50,9 @@ https://dl.acm.org/doi/pdf/10.1145/3447744
 
 
 ## ECG Datasets
+- [ ] BIDMC Congestive Heart Failure https://physionet.org/content/chfdb/1.0.0/
+- [ ] Abdominal and Direct Fetal ECG Database https://physionet.org/content/adfecgdb/1.0.0/
+
 
 
 ## Predictive Maintanance
