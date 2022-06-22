@@ -20,6 +20,8 @@ from .dataloader_single_chest_har import Single_Chest_HAR_DATA
 from .dataloader_HuGaDBV2_har import HuGaDBV2_HAR_DATA
 from .dataloader_utd_mhad_w_har import UTD_MHAD_W_HAR_DATA
 from .dataloader_utd_mhad_t_har import UTD_MHAD_T_HAR_DATA
+from .dataloader_rw_har import REAL_WORLD_HAR_DATA
+
 data_dict = {"ucihar" : UCI_HAR_DATA,
              "daphnet" : Daphnet_HAR_DATA,
              "pamap2" : PAMAP2_HAR_DATA,
@@ -36,8 +38,8 @@ data_dict = {"ucihar" : UCI_HAR_DATA,
              "singlechest" : Single_Chest_HAR_DATA,
              "hugadbv2" : HuGaDBV2_HAR_DATA,
              "utdmhadw" : UTD_MHAD_W_HAR_DATA,
-             "utdmhadt" : UTD_MHAD_T_HAR_DATA}
-
+             "utdmhadt" : UTD_MHAD_T_HAR_DATA,
+             "rw"       : REAL_WORLD_HAR_DATA}
 
 
 
