@@ -149,6 +149,7 @@ class REAL_WORLD_HAR_DATA(BASE_DATA):
                 df_dict[sub_id] = sub_data
 
         df_all = pd.concat(df_dict)
+        df_all = df_all.dropna()
         df_all = df_all.set_index('sub_id')
 
         label_mapping = {item[1]:item[0] for item in self.label_map}
