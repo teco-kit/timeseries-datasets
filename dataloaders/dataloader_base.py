@@ -46,125 +46,15 @@ class BASE_DATA():
         # self.col_names    =  []
         # self.file_encoding = {}
         # self.label_map = []
+        print("About to load participants")
+        self.participants = self.load_participants(self.root_path)
 
-        self.data_x, self.data_y = self.load_all_the_data(self.root_path)
-        # data_x : sub_id, sensor_1, sensor_2,..., sensor_n , sub
-        # data_y : activity_id   index:sub_id
-	
-        if self.difference:
-            self.data_x = self.differencing(self.data_x.set_index('sub_id').copy())
-        # data_x : sub_id, sensor_1, sensor_2,..., sensor_n , sub
-
-        self.slidingwindows = self.get_the_sliding_index(self.data_x.copy(), self.data_y.copy())
-
-        # compute/check the act_weights 
-        self.act_weights = self.update_classes_weight()
-        print("The orginal class weights are : ", self.act_weights)
-        if self.model_type in ["freq","cross"]:
-            assert self.freq_save_path is not None
-            self.genarate_spectrogram()
-
-        if self.exp_mode in ["SOCV","FOCV"]:
-            self.num_of_cv = 5
-            self.index_of_cv = 0
-            self.step = int(len(self.slidingwindows)/self.num_of_cv)
-            self.window_index_list = list(np.arange(len(self.slidingwindows)))
-            random.shuffle(self.window_index_list)
-            if self.datanorm_type is not None:
-                self.normalized_data_x = self.normalization(self.data_x.copy())
-            else:
-                self.normalized_data_x = self.data_x.copy()
-
-        elif self.exp_mode == "LOCV":
-            self.num_of_cv = len(self.LOCV_keys)
-            self.index_of_cv = 0
-
-        else:
-            self.num_of_cv = 1
-
-    def update_train_val_test_keys(self):
-        if self.exp_mode in ["Given", "LOCV"]:
-            if self.exp_mode == "LOCV":
-                print("Leave one Out Experiment : The {} Part as the test".format(self.index_of_cv))
-                self.test_keys =  self.LOCV_keys[self.index_of_cv]
-                self.train_keys = [key for key in self.all_keys if key not in self.test_keys]
-                self.index_of_cv = self.index_of_cv + 1
-            # Normalization the data
-            if self.datanorm_type is not None:
-                train_vali_x = pd.DataFrame()
-                for sub in self.train_keys:
-                    temp = self.data_x[self.data_x[self.split_tag]==sub]
-                    train_vali_x = pd.concat([train_vali_x,temp])
-
-                test_x = pd.DataFrame()
-                for sub in self.test_keys:
-                    temp = self.data_x[self.data_x[self.split_tag]==sub]
-                    test_x = pd.concat([test_x,temp])
-
-            
-                train_vali_x, test_x = self.normalization(train_vali_x, test_x)
-
-                self.normalized_data_x = pd.concat([train_vali_x,test_x])
-                self.normalized_data_x.sort_index(inplace=True)
-            else:
-                self.normalized_data_x = self.data_x.copy()
-
-            train_vali_window_index = []
-            self.test_window_index = []
-
-            all_test_keys = []
-            if self.split_tag == "sub":
-                for sub in self.test_keys:
-                    all_test_keys.extend(self.sub_ids_of_each_sub[sub])
-            else:
-                all_test_keys = self.test_keys.copy()
-            #print(all_test_keys)
-            #print("start--------")
-            for index, window in enumerate(self.slidingwindows):
-                sub_id = window[0]
-                if sub_id in all_test_keys:
-                    self.test_window_index.append(index)
-                else:
-                    train_vali_window_index.append(index)
-            #print("end--------")
-            random.shuffle(train_vali_window_index)
-            self.train_window_index = train_vali_window_index[:int(self.train_vali_quote*len(train_vali_window_index))]
-            self.vali_window_index = train_vali_window_index[int(self.train_vali_quote*len(train_vali_window_index)):]
-
-        elif self.exp_mode in ["SOCV","FOCV"]:
-            print("Overlapping random Experiment : The {} Part as the test".format(self.index_of_cv))
-            start = self.index_of_cv * self.step
-            if self.index_of_cv < self.num_of_cv-1:
-                end = (self.index_of_cv+1) * self.step
-            else:
-                end = len(self.slidingwindows)
-
-            train_vali_index = self.window_index_list[0:start] + self.window_index_list[end:len(self.window_index_list)]
-            self.test_window_index = self.window_index_list[start:end] 
-            # copy shuffle
-            self.train_window_index = train_vali_index[:int(self.train_vali_quote*len(train_vali_index))]
-            self.vali_window_index = train_vali_index[int(self.train_vali_quote*len(train_vali_index)):]
-
-            self.index_of_cv = self.index_of_cv + 1
-
-
-        else:
-            raise NotImplementedError
-
-        # update_classes_weight
-        class_transform = {x: i for i, x in enumerate(self.no_drop_activites)}
-
-        y_of_all_windows  = []
-        for index in self.train_window_index:
-            window = self.slidingwindows[index]
-            start_index = window[1]
-            end_index = window[2]
-            y_of_all_windows.append(class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]])
-        act_weights = class_weight.compute_class_weight('balanced',range(len(self.no_drop_activites)),y_of_all_windows)
-        self.act_weights = act_weights.round(4)
-        print("The class weights are : ", self.act_weights)
-
+        
     def load_all_the_data(self, root_path):
+        raise NotImplementedError
+
+    def load_participants(self, root_path):
+        print("Wrong load_participants")
         raise NotImplementedError
 
 
@@ -292,6 +182,6 @@ class BASE_DATA():
             start_index = window[1]
             end_index = window[2]
             y_of_all_windows.append(class_transform[self.data_y.iloc[start_index:end_index].mode().loc[0]])
-        act_weights = class_weight.compute_class_weight('balanced',range(len(self.no_drop_activites)),y_of_all_windows)
+        act_weights = class_weight.compute_class_weight(class_weight='balanced',classes=range(len(self.no_drop_activites)),y=y_of_all_windows)
         act_weights = act_weights.round(4)
         return act_weights

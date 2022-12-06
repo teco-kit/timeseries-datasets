@@ -74,6 +74,9 @@ class PAMAP2_HAR_DATA(BASE_DATA):
         self.col_names = col_names + [item for sublist in [[dat+'_'+loc for dat in IMU_data] for loc in IMU_locations] for item in sublist]
 
 
+        self.SAMPLE_RATE = args.sampling_freq
+        self.SAMPLE_TIME = 1000 // self.SAMPLE_RATE
+
         self.label_map = [ 
             (0, 'other'),
             (1, 'lying'),
@@ -125,12 +128,40 @@ class PAMAP2_HAR_DATA(BASE_DATA):
 
         super(PAMAP2_HAR_DATA, self).__init__(args)
 
+
+    def load_participants(self, root_path):
+        file_list = os.listdir(root_path)
+        
+        res_data = []
+        for file in file_list:
+            sub_data = pd.read_table(os.path.join(root_path,file), sep='\s+')
+            sub_data =sub_data.iloc[:,self.used_cols]
+            sub_data.columns = self.col_names
+
+            # if missing values, imputation
+            sub_data = sub_data.interpolate(method='linear', limit_direction='both')
+            sub = int(self.file_encoding[file])
+            sub_data['sub_id'] =sub
+            sub_data["sub"] = sub
+            sub_data = sub_data[self.col_names[1:]+["sub"]+["activity_id"]]
+            sub_data["activity_id"] = sub_data["activity_id"].map(self.labelToId)
+            sub_data.insert(0, 'timestamp', range(0, len(sub_data) * self.SAMPLE_TIME, self.SAMPLE_TIME))
+            sub_data["timestamp"] = pd.to_datetime(sub_data['timestamp'], unit='ms')
+            sub_data = sub_data.drop("sub", axis=1)
+            dict = {}
+            for col in sub_data.columns[1:-1]:
+              dict[col] = sub_data[["timestamp", col]]
+            res_data.append(dict)
+
+        return res_data
+
+
     def load_all_the_data(self, root_path):
         print(" ----------------------- load all the data -------------------")
         file_list = os.listdir(root_path)
         
         df_dict = {}
-        for file in file_list:
+        for file in file_list: # For each participant
             sub_data = pd.read_table(os.path.join(root_path,file), header=None, sep='\s+')
             sub_data =sub_data.iloc[:,self.used_cols]
             sub_data.columns = self.col_names
@@ -144,7 +175,8 @@ class PAMAP2_HAR_DATA(BASE_DATA):
             if sub not in self.sub_ids_of_each_sub.keys():
                 self.sub_ids_of_each_sub[sub] = []
             self.sub_ids_of_each_sub[sub].append(sub)
-            df_dict[self.file_encoding[file]] = sub_data   
+            df_dict[self.file_encoding[file]] = sub_data
+
 
 
         # all data
